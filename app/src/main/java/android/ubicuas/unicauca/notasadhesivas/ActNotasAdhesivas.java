@@ -3,14 +3,19 @@ package android.ubicuas.unicauca.notasadhesivas;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Parcelable;
+import android.provider.Settings;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -21,13 +26,14 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.io.File;
 import java.io.IOException;
 
-public class ActNotasAdhesivas extends AppCompatActivity implements EscribirFragment.OnFragmentInteractionListener {
+public class ActNotasAdhesivas extends AppCompatActivity implements EscribirFragment.OnFragmentInteractionEscribirListener, P2PFragment.OnFragmentP2PInteractionListener {
 
     LeerFragment fragmentLeer;
     EscribirFragment fragmentEscribir;
-
+    P2PFragment fragmentP2P;
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -70,6 +76,25 @@ public class ActNotasAdhesivas extends AppCompatActivity implements EscribirFrag
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
 
+        PackageManager pm = this.getPackageManager();
+        // Check whether NFC is available on device
+        if (!pm.hasSystemFeature(PackageManager.FEATURE_NFC)) {
+            // NFC is not available on the device.
+            Toast.makeText(this, "The device does not has NFC hardware.",
+                    Toast.LENGTH_SHORT).show();
+        }
+        // Check whether device is running Android 4.1 or higher
+        else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+            // Android Beam feature is not supported.
+            Toast.makeText(this, "Android Beam is not supported.",
+                    Toast.LENGTH_SHORT).show();
+        }
+        else {
+            // NFC and Android Beam file transfer is supported.
+            Toast.makeText(this, "Android Beam is supported on your device.",
+                    Toast.LENGTH_SHORT).show();
+        }
+
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
 //        findViewById(R.id.write_tag).setOnClickListener(mTagWriter);
         //mNote = ((EditText) findViewById(R.id.editText));
@@ -90,6 +115,45 @@ public class ActNotasAdhesivas extends AppCompatActivity implements EscribirFrag
         mWriteTagFilters = new IntentFilter[] { tagDetected };
 
     }
+
+    public void sendFile() {
+
+        // Check whether NFC is enabled on device
+        if(!mNfcAdapter.isEnabled()){
+            // NFC is disabled, show the settings UI
+            // to enable NFC
+            Toast.makeText(this, "Please enable NFC.",
+                    Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(Settings.ACTION_NFC_SETTINGS));
+        }
+        // Check whether Android Beam feature is enabled on device
+        else if(!mNfcAdapter.isNdefPushEnabled()) {
+            // Android Beam is disabled, show the settings UI
+            // to enable Android Beam
+            Toast.makeText(this, "Please enable Android Beam.",
+                    Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(Settings.ACTION_NFCSHARING_SETTINGS));
+        }
+        else {
+            // NFC and Android Beam both are enabled
+
+            // File to be transferred
+            // For the sake of this tutorial I've placed an image
+            // named 'wallpaper.png' in the 'Pictures' directory
+            String fileName = "wallpaper.png";
+
+            // Retrieve the path to the user's public pictures directory
+            File fileDirectory = Environment
+                    .getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_PICTURES);
+
+            // Create a new file using the specified directory and name
+            File fileToTransfer = new File(fileDirectory, fileName);
+            fileToTransfer.setReadable(true, false);
+            mNfcAdapter.setBeamPushUris(new Uri[]{Uri.fromFile(fileToTransfer)}, this);
+        }
+    }
+
 
     protected void onNewIntent(Intent intent) {
         // Modo de intercambio NDEF
@@ -168,7 +232,7 @@ public class ActNotasAdhesivas extends AppCompatActivity implements EscribirFrag
     private NdefMessage getNoteAsNdef() {
         byte[] textBytes;
         if (fragmentEscribir!=null){
-           textBytes = fragmentEscribir.mNote.getText().toString().getBytes();
+            textBytes = fragmentEscribir.mNote.getText().toString().getBytes();
         }else{
             textBytes = "".toString().getBytes();
         }
@@ -259,6 +323,11 @@ public class ActNotasAdhesivas extends AppCompatActivity implements EscribirFrag
         enableNdefExchangeMode();
     }
 
+    @Override
+    public void onFragmentInteractionSend() {
+        sendFile();
+    }
+
 
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
@@ -288,6 +357,12 @@ public class ActNotasAdhesivas extends AppCompatActivity implements EscribirFrag
                     }
                     fragment = fragmentEscribir;
                     break;
+                case 2:
+                    if (fragmentP2P==null) {
+                        fragmentP2P = new P2PFragment();
+                    }
+                    fragment = fragmentP2P;
+                    break;
                 default:
                     break;
             }
@@ -298,7 +373,7 @@ public class ActNotasAdhesivas extends AppCompatActivity implements EscribirFrag
         @Override
         public int getCount() {
             // Show 3 total pages.
-            return 2;
+            return 3;
         }
 
         @Override
@@ -308,6 +383,8 @@ public class ActNotasAdhesivas extends AppCompatActivity implements EscribirFrag
                     return "Leer";
                 case 1:
                     return "Escribir";
+                case 2:
+                    return "P2P";
             }
             return null;
         }

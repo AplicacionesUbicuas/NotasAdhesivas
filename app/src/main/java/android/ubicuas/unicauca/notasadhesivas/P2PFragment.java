@@ -1,22 +1,19 @@
 package android.ubicuas.unicauca.notasadhesivas;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 
 
 /**
  * A simple {@link Fragment} subclass.
- * Use the {@link EscribirFragment#newInstance} factory method to
+ * Use the {@link P2PFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class EscribirFragment extends Fragment {
+public class P2PFragment extends Fragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -25,9 +22,8 @@ public class EscribirFragment extends Fragment {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
-    EditText mNote;
 
-    private OnFragmentInteractionEscribirListener mListener;
+    private OnFragmentP2PInteractionListener mListener;
 
     /**
      * Use this factory method to create a new instance of
@@ -38,8 +34,8 @@ public class EscribirFragment extends Fragment {
      * @return A new instance of fragment EscribirFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static EscribirFragment newInstance(String param1, String param2) {
-        EscribirFragment fragment = new EscribirFragment();
+    public static P2PFragment newInstance(String param1, String param2) {
+        P2PFragment fragment = new P2PFragment();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
         args.putString(ARG_PARAM2, param2);
@@ -47,7 +43,7 @@ public class EscribirFragment extends Fragment {
         return fragment;
     }
 
-    public EscribirFragment() {
+    public P2PFragment() {
         // Required empty public constructor
     }
 
@@ -64,32 +60,16 @@ public class EscribirFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_escribir, container, false);
-        mNote = ((EditText) view.findViewById(R.id.editText));
-        view.findViewById(R.id.write_tag).setOnClickListener(mTagWriter);
+        View view = inflater.inflate(R.layout.fragment_p2p, container, false);
+        view.findViewById(R.id.send_file).setOnClickListener(mSendFile);
         return view;
     }
 
-    private View.OnClickListener mTagWriter = new View.OnClickListener() {
+    private View.OnClickListener mSendFile = new View.OnClickListener() {
         @Override
         public void onClick(View arg0) {
-            if (mNote.getText().toString().isEmpty()){
-                mNote.setError("Campo Obligatorio");
-            }else {
-
-                if (mListener != null) {
-                    mListener.onFragmentInteractionDisabled();
-                }
-
-                new AlertDialog.Builder(getActivity()).setTitle("Toque la etiqueta a escribir ")
-                        .setOnCancelListener(new DialogInterface.OnCancelListener() {
-                            @Override
-                            public void onCancel(DialogInterface dialog) {
-                                if (mListener != null) {
-                                    mListener.onFragmentInteractionEnabled();
-                                }
-                            }
-                        }).create().show();
+            if (mListener!=null){
+                mListener.onFragmentInteractionSend();
             }
         }
     };
@@ -98,7 +78,7 @@ public class EscribirFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         try {
-            mListener = (OnFragmentInteractionEscribirListener) activity;
+            mListener = (OnFragmentP2PInteractionListener) activity;
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString()
                     + " must implement OnFragmentInteractionListener");
@@ -121,10 +101,9 @@ public class EscribirFragment extends Fragment {
      * "http://developer.android.com/training/basics/fragments/communicating.html"
      * >Communicating with Other Fragments</a> for more information.
      */
-    public interface OnFragmentInteractionEscribirListener {
+    public interface OnFragmentP2PInteractionListener {
         // TODO: Update argument type and name
-        public void onFragmentInteractionDisabled();
-        public void onFragmentInteractionEnabled();
+        public void onFragmentInteractionSend();
     }
 
 
